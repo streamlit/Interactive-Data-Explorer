@@ -8,7 +8,7 @@ This data app shows a simple demonstration of an interactive data explorer that 
 
 ## Demo App
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://interactive-data-explorer.streamlit.app/)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://interactive-data-explorer-template.streamlit.app/)
 
 ## GitHub Codespaces
 
