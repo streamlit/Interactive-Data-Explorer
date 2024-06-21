@@ -1,65 +1,58 @@
-import streamlit as st
-import numpy as np
-import pandas as pd
 import altair as alt
+import pandas as pd
+import streamlit as st
 
-# Page title
-st.set_page_config(page_title="Interactive Data Explorer", page_icon="📊")
-st.title("📊 Interactive Data Explorer")
+# Show the page title and description.
+st.set_page_config(page_title="Movies dataset", page_icon="🎬")
+st.title("🎬 Movies dataset")
+st.write(
+    """
+    This app visualizes data from [The Movie Database (TMDB)](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata).
+    It shows which movie genre performed best at the box office over the years. Just 
+    click on the widgets below to explore!
+    """
+)
 
-with st.expander("About this app"):
-    st.markdown("**What can this app do?**")
-    st.info(
-        "This app shows the use of Pandas for data wrangling, Altair for chart creation and editable dataframe for data interaction."
-    )
-    st.markdown("**How to use the app?**")
-    st.warning(
-        "To engage with the app, 1. Select genres of your interest in the drop-down selection box and then 2. Select the year duration from the slider widget. As a result, this should generate an updated editable DataFrame and line plot."
-    )
 
-st.subheader("Which Movie Genre performs ($) best at the box office?")
+# Load the data from a CSV. We're caching this so it doesn't reload every time the app
+# reruns (e.g. if the user interacts with the widgets).
+@st.cache_data
+def load_data():
+    df = pd.read_csv("data/movies_genres_summary.csv")
+    return df
 
-# Load data
-df = pd.read_csv("data/movies_genres_summary.csv")
-df.year = df.year.astype("int")
 
-# Input widgets
-## Genres selection
-genres_list = df.genre.unique()
-genres_selection = st.multiselect(
-    "Select genres",
-    genres_list,
+df = load_data()
+
+# Show a multiselect widget with the genres using `st.multiselect`.
+genres = st.multiselect(
+    "Genres",
+    df.genre.unique(),
     ["Action", "Adventure", "Biography", "Comedy", "Drama", "Horror"],
 )
 
-## Year selection
-year_list = df.year.unique()
-year_selection = st.slider("Select year duration", 1986, 2006, (2000, 2016))
-year_selection_list = list(np.arange(year_selection[0], year_selection[1] + 1))
+# Show a slider widget with the years using `st.slider`.
+years = st.slider("Select year duration", 1986, 2006, (2000, 2016))
 
-df_selection = df[
-    df.genre.isin(genres_selection) & df["year"].isin(year_selection_list)
-]
-reshaped_df = df_selection.pivot_table(
+# Filter the dataframe based on the widget input and reshape it.
+df_filtered = df[(df["genre"].isin(genres)) & (df["year"].between(years[0], years[1]))]
+df_reshaped = df_filtered.pivot_table(
     index="year", columns="genre", values="gross", aggfunc="sum", fill_value=0
 )
-reshaped_df = reshaped_df.sort_values(by="year", ascending=False)
+df_reshaped = df_reshaped.sort_values(by="year", ascending=False)
 
 
-# Display DataFrame
-
-df_editor = st.data_editor(
-    reshaped_df,
-    height=212,
+# Display the data as a table using `st.dataframe`.
+st.dataframe(
+    df_reshaped,
     use_container_width=True,
     column_config={"year": st.column_config.TextColumn("Year")},
-    num_rows="dynamic",
-)
-df_chart = pd.melt(
-    df_editor.reset_index(), id_vars="year", var_name="genre", value_name="gross"
 )
 
-# Display chart
+# Display the data as an Altair chart using `st.altair_chart`.
+df_chart = pd.melt(
+    df_reshaped.reset_index(), id_vars="year", var_name="genre", value_name="gross"
+)
 chart = (
     alt.Chart(df_chart)
     .mark_line()
